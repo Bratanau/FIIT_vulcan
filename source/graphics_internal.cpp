@@ -25,6 +25,23 @@ namespace graphics::internal {
 
 namespace {
 
+VkFormat find_supported_depth_format(VkPhysicalDevice phys) {
+	const VkFormat candidates[] = {
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D16_UNORM,
+	};
+	for (VkFormat f : candidates) {
+		VkFormatProperties p{};
+		vkGetPhysicalDeviceFormatProperties(phys, f, &p);
+		if (p.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+		return f;
+		}
+	}
+	return VK_FORMAT_UNDEFINED;
+}
+
 VkInstance vk_instance;
 uint32_t vk_api_version;
 VkSurfaceKHR vk_surface;
@@ -321,10 +338,16 @@ bool initialize(GLFWwindow* const window) {
 
 	const uint32_t swapchain_images_count = uint32_t(vk_swapchain_images.size());
 
+	const VkFormat depth_format = find_supported_depth_format(context.physical_device);
+	if (depth_format == VK_FORMAT_UNDEFINED) {
+		std::cerr << "No supported depth format found!\n";
+		return false;
+	}
+
 	const VkImageCreateInfo depth_buffer = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		.imageType = VK_IMAGE_TYPE_2D,
-		.format = VK_FORMAT_D24_UNORM_S8_UINT,
+		.format = depth_format,
 		.extent = { uint32_t(width), uint32_t(height), 1 },
 		.mipLevels = 1,
 		.arrayLayers = 1,
@@ -350,7 +373,7 @@ bool initialize(GLFWwindow* const window) {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.image = vk_image_depth_buffer,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = VK_FORMAT_D24_UNORM_S8_UINT,
+		.format = depth_format,
 		.subresourceRange = {
 			.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.baseMipLevel = 0,
@@ -378,7 +401,7 @@ bool initialize(GLFWwindow* const window) {
 			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
 		{
-			.format = VK_FORMAT_D24_UNORM_S8_UINT,
+			.format = depth_format,
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -547,7 +570,8 @@ void shutdown() {
 }
 
 void resize(uint32_t width, uint32_t height) {
-	void(width), void(height);
+	(void)width; 
+	(void)height;
 
 	vkQueueWaitIdle(context.graphics_queue);
 	std::cerr << "Resize not implemented!\n";
