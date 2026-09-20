@@ -529,4 +529,4 @@ void render(const graphics::internal::FrameData& fd) {
     vkEndCommandBuffer(cmd);
 }
 
-} // namespace application
+} 
