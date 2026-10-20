@@ -46,35 +46,35 @@ struct Object {
 
     glm::vec3 position {0.0f};
     glm::vec3 rotation {0.0f};
-    glm::vec3 scale    {1.0f};
-    glm::vec3 color    {1.0f};
+    glm::vec3 scale {1.0f};
+    glm::vec3 color {1.0f};
 
-    bool  animated     = true;
+    bool  animated = true;
     float orbit_radius = 2.0f;
     float orbit_height = 0.0f;
-    float orbit_speed  = 1.0f;
-    float spin_speed   = 45.0f;
+    float orbit_speed = 1.0f;
+    float spin_speed = 45.0f;
 };
 
 VkDescriptorSetLayout g_descriptor_set_layout = VK_NULL_HANDLE;
-VkDescriptorPool      g_descriptor_pool       = VK_NULL_HANDLE;
-VkPipelineLayout      g_pipeline_layout       = VK_NULL_HANDLE;
-VkPipeline            g_pipeline              = VK_NULL_HANDLE;
+VkDescriptorPool g_descriptor_pool = VK_NULL_HANDLE;
+VkPipelineLayout g_pipeline_layout = VK_NULL_HANDLE;
+VkPipeline g_pipeline = VK_NULL_HANDLE;
 
 std::vector<Object> g_objects;
 
 bool  g_use_perspective = true;
-float g_fov             = 60.0f;
-float g_ortho_height    = 4.0f;
-float g_near_plane      = 0.1f;
-float g_far_plane       = 100.0f;
+float g_fov = 60.0f;
+float g_ortho_height = 4.0f;
+float g_near_plane = 0.1f;
+float g_far_plane = 100.0f;
 
-bool   g_playing         = true;
+bool   g_playing = true;
 float  g_animation_speed = 1.0f;
-double g_animation_time  = 0.0;
+double g_animation_time = 0.0;
 
 glm::vec3 g_camera_position {4.0f, 3.0f, 4.0f};
-glm::vec3 g_camera_target   {0.0f, 0.0f, 0.0f};
+glm::vec3 g_camera_target {0.0f, 0.0f, 0.0f};
 
 std::vector<char> read_file(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -89,31 +89,27 @@ std::vector<char> read_file(const std::string& filename) {
 
 VkShaderModule create_shader_module(const std::vector<char>& code) {
     VkShaderModuleCreateInfo info{};
-    info.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     info.codeSize = code.size();
-    info.pCode    = reinterpret_cast<const uint32_t*>(code.data());
+    info.pCode = reinterpret_cast<const uint32_t*>(code.data());
     VkShaderModule mod = VK_NULL_HANDLE;
     vkCreateShaderModule(graphics::internal::context.device, &info, nullptr, &mod);
     return mod;
 }
 
-void create_host_buffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                        VkBuffer* out_buf, VmaAllocation* out_alloc,
-                        void** out_mapped) {
+void create_host_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* out_buf, VmaAllocation* out_alloc, void** out_mapped) {
     VkBufferCreateInfo bi{};
-    bi.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bi.size        = size;
-    bi.usage       = usage;
+    bi.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bi.size = size;
+    bi.usage = usage;
     bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VmaAllocationCreateInfo ai{};
     ai.usage = VMA_MEMORY_USAGE_AUTO;
-    ai.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-             | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    ai.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
     VmaAllocationInfo info{};
-    vmaCreateBuffer(graphics::internal::context.allocator, &bi, &ai,
-                    out_buf, out_alloc, &info);
+    vmaCreateBuffer(graphics::internal::context.allocator, &bi, &ai, out_buf, out_alloc, &info);
     if (out_mapped) *out_mapped = info.pMappedData;
 }
 
@@ -176,15 +172,15 @@ void make_sphere(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices,
 
 void create_descriptor_set_layout() {
     VkDescriptorSetLayoutBinding b{};
-    b.binding         = 0;
+    b.binding = 0;
     b.descriptorCount = 1;
-    b.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    b.stageFlags      = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    b.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    b.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutCreateInfo info{};
-    info.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     info.bindingCount = 1;
-    info.pBindings    = &b;
+    info.pBindings = &b;
     vkCreateDescriptorSetLayout(graphics::internal::context.device, &info, nullptr, &g_descriptor_set_layout);
 }
 
@@ -293,7 +289,7 @@ void create_pipeline() {
 
 Object build_object(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, VkDescriptorSet dset) {
     Object obj;
-    obj.index_count  = static_cast<uint32_t>(indices.size());
+    obj.index_count = static_cast<uint32_t>(indices.size());
     obj.descriptor_set = dset;
 
     void* vertex_mapped = nullptr;
@@ -309,7 +305,7 @@ Object build_object(const std::vector<Vertex>& vertices, const std::vector<uint3
     VkDescriptorBufferInfo buffer_info{};
     buffer_info.buffer = obj.uniform_buffer;
     buffer_info.offset = 0;
-    buffer_info.range  = sizeof(UBO);
+    buffer_info.range = sizeof(UBO);
 
     VkWriteDescriptorSet w{};
     w.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -354,26 +350,26 @@ bool initialize() {
 
     create_pipeline();
     {
-        std::vector<Vertex>   verts;
+        std::vector<Vertex> verts;
         std::vector<uint32_t> indices;
         make_cube(verts, indices);
         Object cube = build_object(verts, indices, dsets[0]);
-        cube.color        = { 1.0f, 0.7f, 0.4f };
-        cube.scale        = { 0.7f, 0.7f, 0.7f };
+        cube.color = { 1.0f, 0.7f, 0.4f };
+        cube.scale = { 0.7f, 0.7f, 0.7f };
         cube.orbit_radius = 2.0f;
-        cube.spin_speed   = 45.0f;
+        cube.spin_speed = 45.0f;
         g_objects.push_back(cube);
     }
     {
-        std::vector<Vertex>   verts;
+        std::vector<Vertex> verts;
         std::vector<uint32_t> indices;
         make_sphere(verts, indices, 1.0f, 16, 24);
         Object sphere = build_object(verts, indices, dsets[1]);
-        sphere.color        = { 0.4f, 0.8f, 1.0f };
-        sphere.scale        = { 0.5f, 0.5f, 0.5f };
+        sphere.color = { 0.4f, 0.8f, 1.0f };
+        sphere.scale = { 0.5f, 0.5f, 0.5f };
         sphere.orbit_radius = 4.0f;
-        sphere.orbit_speed  = 0.5f;
-        sphere.spin_speed   = 20.0f;
+        sphere.orbit_speed = 0.5f;
+        sphere.spin_speed = 20.0f;
         g_objects.push_back(sphere);
     }
 
@@ -487,7 +483,7 @@ void update(double time) {
 
 void render(const graphics::internal::FrameData& fd) {
     VkCommandBuffer cmd = fd.command_buffer;
-    VkExtent2D      ext = graphics::internal::context.swapchain_extent;
+    VkExtent2D ext = graphics::internal::context.swapchain_extent;
 
     VkCommandBufferBeginInfo begin{};
     begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -509,8 +505,8 @@ void render(const graphics::internal::FrameData& fd) {
     vkCmdBeginRenderPass(cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
 
     VkViewport vp{};
-    vp.width    = (float)ext.width;
-    vp.height   = (float)ext.height;
+    vp.width = (float)ext.width;
+    vp.height = (float)ext.height;
     vp.minDepth = 0.0f;
     vp.maxDepth = 1.0f;
     vkCmdSetViewport(cmd, 0, 1, &vp);
