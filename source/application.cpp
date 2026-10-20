@@ -417,13 +417,13 @@ void update(double time) {
     if (g_playing) g_animation_time += dt * g_animation_speed; 
 
     ImGui::Begin("Lab1");
-
     ImGui::SeparatorText("Projection");                         
     if (ImGui::RadioButton("Perspective",  g_use_perspective)) g_use_perspective = true;
     ImGui::SameLine();
     if (ImGui::RadioButton("Orthographic", !g_use_perspective)) g_use_perspective = false;
-    if (g_use_perspective) ImGui::SliderFloat("FOV",          &g_fov,          20.0f, 120.0f);
-    else                   ImGui::SliderFloat("Ortho Height", &g_ortho_height,  0.5f,  10.0f);
+    if (g_use_perspective) ImGui::SliderFloat("FOV", &g_fov, 20.0f, 120.0f);
+    else ImGui::SliderFloat("Ortho Height", &g_ortho_height,  0.5f,  10.0f);
+
     ImGui::SliderFloat("Near", &g_near_plane, 0.01f, 5.0f);
     ImGui::SliderFloat("Far", &g_far_plane, 5.0f, 200.0f);
 
@@ -462,7 +462,7 @@ void update(double time) {
         glm::vec3 anim_rot = obj.rotation;
 
         if (obj.animated) {
-            float t     = (float)g_animation_time;
+            float t = (float)g_animation_time;
             float angle = t * obj.orbit_speed;
             anim_pos += glm::vec3(cosf(angle) * obj.orbit_radius, obj.orbit_height, sinf(angle) * obj.orbit_radius);
             anim_rot.y += t * obj.spin_speed;

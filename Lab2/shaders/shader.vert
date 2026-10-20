@@ -8,18 +8,22 @@ layout(location = 1) out vec3 worldNormal;
 
 layout(set = 0, binding = 0) uniform Scene {
     mat4 viewProjection;
-    mat4 model;
     vec4 cameraPosition;
     vec4 lightDirection;
     vec4 lightColorIntensity;
     vec4 ambientColorIntensity;
-    vec4 albedo;
-    vec4 specularShininess;
+    uvec4 counts;
 } scene;
 
+layout(set = 1, binding = 0) uniform Model {
+    mat4 model;
+    vec4 albedo;
+    vec4 specularShininess;
+} model;
+
 void main() {
-    vec4 position = scene.model * vec4(inPosition, 1.0);
+    vec4 position = model.model * vec4(inPosition, 1.0);
     worldPosition = position.xyz;
-    worldNormal = mat3(transpose(inverse(scene.model))) * inNormal;
+    worldNormal = mat3(transpose(inverse(model.model))) * inNormal;
     gl_Position = scene.viewProjection * position;
 }
