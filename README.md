@@ -63,3 +63,21 @@ because relative paths are used.
 `CMakeLists.txt` has a build recipe for compiling shader files
 along with an application. Look for a comment in this file to see
 how to compile your shaders.
+
+### Laboratory applications
+
+Lab 2 and Lab 3 are separate targets and keep their sources, shaders, and assets
+in their respective folders. Build a single lab with:
+
+```bash
+cmake --build build-debug --target lab2 --parallel
+cmake --build build-debug --target lab3 --parallel
+```
+
+Run each executable with its build subdirectory as the working directory so it
+can find its shaders and textures:
+
+```bash
+cd build-debug/Lab2 && ./lab2.exe
+cd build-debug/Lab3 && ./lab3.exe
+```

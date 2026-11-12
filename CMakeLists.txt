@@ -52,6 +52,12 @@ FetchContent_Declare(
 	GIT_SHALLOW TRUE
 )
 
+FetchContent_Declare(
+	stb
+	GIT_REPOSITORY https://github.com/nothings/stb.git
+	GIT_TAG 9600522de53973336fa033a289858a4354cbb04c
+)
+
 find_package(Vulkan REQUIRED)
 
 set(GLFW_LIBRARY_TYPE STATIC)
@@ -65,6 +71,7 @@ FetchContent_MakeAvailable(
 	VulkanMemoryAllocator
 	imgui
 	glm
+	stb
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -127,3 +134,6 @@ if(GLSLC_FOUND)
 else()
 	message(WARNING "glslc not found — shaders will NOT be compiled automatically")
 endif()
+
+add_subdirectory(Lab2)
+add_subdirectory(Lab3)
