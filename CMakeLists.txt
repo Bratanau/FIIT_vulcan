@@ -21,24 +21,35 @@ FetchContent_Declare(
 	glfw
 	GIT_REPOSITORY https://github.com/glfw/glfw.git
 	GIT_TAG 3.5.1
+	GIT_SHALLOW TRUE
 )
 
 FetchContent_Declare(
 	vk-bootstrap
 	GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap.git
 	GIT_TAG v1.4.321
+	GIT_SHALLOW TRUE
 )
 
 FetchContent_Declare(
 	VulkanMemoryAllocator
 	GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 	GIT_TAG v3.4.0
+	GIT_SHALLOW TRUE
 )
 
 FetchContent_Declare(
 	imgui
 	GIT_REPOSITORY https://github.com/ocornut/imgui.git
 	GIT_TAG v1.92.9
+	GIT_SHALLOW TRUE
+)
+
+FetchContent_Declare(
+	glm
+	GIT_REPOSITORY https://github.com/g-truc/glm.git
+	GIT_TAG 1.0.2
+	GIT_SHALLOW TRUE
 )
 
 find_package(Vulkan REQUIRED)
@@ -53,6 +64,7 @@ FetchContent_MakeAvailable(
 	vk-bootstrap
 	VulkanMemoryAllocator
 	imgui
+	glm
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -60,10 +72,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 	Vulkan::Vulkan
 	vk-bootstrap::vk-bootstrap
 	GPUOpen::VulkanMemoryAllocator
+	glm::glm
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}/extern/glm
 	${imgui_SOURCE_DIR}
 	${imgui_SOURCE_DIR}/backends
 )
@@ -83,18 +95,28 @@ if(GLSLC_FOUND)
 	set(_SHADER_BINARIES)
 
 	macro(compile_shader SHADER_FILE)
-		set(SHADER_SOURCE ${CMAKE_SOURCE_DIR}/shaders/${SHADER_FILE})
+		set(SHADER_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${SHADER_FILE})
 		set(SHADER_BINARY ${SHADER_FILE}.spv)
-		set(SHADER_BINARY_PATH ${CMAKE_SOURCE_DIR}/shaders/${SHADER_BINARY})
+		set(SHADER_SOURCE_BINARY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${SHADER_BINARY})
+		set(SHADER_BINARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/shaders/${SHADER_BINARY})
 
 		add_custom_command(
-			OUTPUT ${SHADER_BINARY_PATH}
-			COMMAND glslc ${SHADER_SOURCE} -o ${SHADER_BINARY_PATH}
+			OUTPUT ${SHADER_SOURCE_BINARY_PATH}
+			COMMAND glslc ${SHADER_SOURCE} -o ${SHADER_SOURCE_BINARY_PATH}
 			DEPENDS ${SHADER_SOURCE}
 			COMMENT "Compiling ${SHADER_FILE} shader"
 		)
 
-		list(APPEND _SHADER_BINARIES ${SHADER_BINARY_PATH})
+		add_custom_command(
+			OUTPUT ${SHADER_BINARY_PATH}
+			COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+				${SHADER_SOURCE_BINARY_PATH} ${SHADER_BINARY_PATH}
+			DEPENDS ${SHADER_SOURCE_BINARY_PATH}
+			COMMENT "Copying ${SHADER_FILE} shader to the build directory"
+		)
+
+		list(APPEND _SHADER_BINARIES ${SHADER_SOURCE_BINARY_PATH} ${SHADER_BINARY_PATH})
 	endmacro()
 
 	compile_shader(shader.vert)
