@@ -113,10 +113,8 @@ void check_vk(VkResult result, const char* operation) {
 		throw std::runtime_error(operation);
 }
 
-void create_buffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                   VmaAllocationCreateFlags flags, VmaMemoryUsage memory_usage,
-                   VkBuffer& buffer, VmaAllocation& allocation, void** mapped = nullptr) {
-	VkBufferCreateInfo buffer_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+void create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaAllocationCreateFlags flags, VmaMemoryUsage memory_usage, VkBuffer& buffer, VmaAllocation& allocation, void** mapped = nullptr) {
+	VkBufferCreateInfo buffer_info{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	buffer_info.size = size;
 	buffer_info.usage = usage;
 	buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -124,10 +122,7 @@ void create_buffer(VkDeviceSize size, VkBufferUsageFlags usage,
 	allocation_info.usage = memory_usage;
 	allocation_info.flags = flags;
 	VmaAllocationInfo result{};
-	check_vk(vmaCreateBuffer(graphics::internal::context.allocator, &buffer_info,
-	                         &allocation_info, &buffer, &allocation,
-	                         mapped ? &result : nullptr),
-	         "Failed to create Lab 3 buffer");
+	check_vk(vmaCreateBuffer(graphics::internal::context.allocator, &buffer_info, &allocation_info, &buffer, &allocation, mapped ? &result : nullptr), "Failed to create Lab 3 buffer");
 	if (mapped)
 		*mapped = result.pMappedData;
 }
@@ -139,8 +134,7 @@ void immediate_submit(const std::function<void(VkCommandBuffer)>& record) {
 	allocate.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocate.commandBufferCount = 1;
 	VkCommandBuffer command = VK_NULL_HANDLE;
-	check_vk(vkAllocateCommandBuffers(device, &allocate, &command),
-	         "Failed to allocate upload command buffer");
+	check_vk(vkAllocateCommandBuffers(device, &allocate, &command), "Failed to allocate upload command buffer");
 
 	VkCommandBufferBeginInfo begin{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -151,11 +145,8 @@ void immediate_submit(const std::function<void(VkCommandBuffer)>& record) {
 	VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
 	submit.commandBufferCount = 1;
 	submit.pCommandBuffers = &command;
-	check_vk(vkQueueSubmit(graphics::internal::context.graphics_queue, 1, &submit,
-	                       VK_NULL_HANDLE),
-	         "Failed to submit upload command buffer");
-	check_vk(vkQueueWaitIdle(graphics::internal::context.graphics_queue),
-	         "Failed waiting for upload commands");
+	check_vk(vkQueueSubmit(graphics::internal::context.graphics_queue, 1, &submit, VK_NULL_HANDLE), "Failed to submit upload command buffer");
+	check_vk(vkQueueWaitIdle(graphics::internal::context.graphics_queue), "Failed waiting for upload commands");
 	vkFreeCommandBuffers(device, upload_command_pool, 1, &command);
 }
 
@@ -166,29 +157,22 @@ Texture load_texture(const char* path) {
 	stbi_set_flip_vertically_on_load(1);
 	stbi_uc* pixels = stbi_load(path, &width, &height, &channels, STBI_rgb_alpha);
 	if (!pixels)
-		throw std::runtime_error(std::string("Failed to load texture ") + path + ": "
-		                         + stbi_failure_reason());
+		throw std::runtime_error(std::string("Failed to load texture ") + path + ": " + stbi_failure_reason());
 
-	const VkDeviceSize image_size = static_cast<VkDeviceSize>(width)
-	                              * static_cast<VkDeviceSize>(height) * 4;
+	const VkDeviceSize image_size = static_cast<VkDeviceSize>(width) * static_cast<VkDeviceSize>(height) * 4;
 	VkBuffer staging_buffer = VK_NULL_HANDLE;
 	VmaAllocation staging_allocation = VK_NULL_HANDLE;
 	void* staging_data = nullptr;
-	create_buffer(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-	              VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-	              | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-	              VMA_MEMORY_USAGE_AUTO, staging_buffer, staging_allocation, &staging_data);
+	create_buffer(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_AUTO, staging_buffer, staging_allocation, &staging_data);
 	std::memcpy(staging_data, pixels, static_cast<size_t>(image_size));
-	check_vk(vmaFlushAllocation(graphics::internal::context.allocator,
-	                            staging_allocation, 0, image_size),
-	         "Failed to flush texture staging buffer");
+	check_vk(vmaFlushAllocation(graphics::internal::context.allocator, staging_allocation, 0, image_size), "Failed to flush texture staging buffer");
 	stbi_image_free(pixels);
 
 	Texture texture;
 	VkImageCreateInfo image_info{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
 	image_info.imageType = VK_IMAGE_TYPE_2D;
 	image_info.format = VK_FORMAT_R8G8B8A8_UNORM;
-	image_info.extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
+	image_info.extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
 	image_info.mipLevels = 1;
 	image_info.arrayLayers = 1;
 	image_info.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -198,28 +182,23 @@ Texture load_texture(const char* path) {
 	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	VmaAllocationCreateInfo image_allocation{};
 	image_allocation.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-	check_vk(vmaCreateImage(graphics::internal::context.allocator, &image_info,
-	                        &image_allocation, &texture.image, &texture.allocation, nullptr),
-	         "Failed to create texture image");
+	check_vk(vmaCreateImage(graphics::internal::context.allocator, &image_info, &image_allocation, &texture.image, &texture.allocation, nullptr), "Failed to create texture image");
 
 	immediate_submit([&](VkCommandBuffer command) {
-		VkImageMemoryBarrier to_transfer{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+		VkImageMemoryBarrier to_transfer{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 		to_transfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		to_transfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		to_transfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		to_transfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		to_transfer.image = texture.image;
-		to_transfer.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+		to_transfer.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 		to_transfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		                     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
-		                     1, &to_transfer);
+		vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_transfer);
 
 		VkBufferImageCopy copy{};
 		copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
 		copy.imageExtent = image_info.extent;
-		vkCmdCopyBufferToImage(command, staging_buffer, texture.image,
-		                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+		vkCmdCopyBufferToImage(command, staging_buffer, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
 		VkImageMemoryBarrier to_shader{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
 		to_shader.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -230,9 +209,7 @@ Texture load_texture(const char* path) {
 		to_shader.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
 		to_shader.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		to_shader.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
-		                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr,
-		                     0, nullptr, 1, &to_shader);
+		vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_shader);
 	});
 	vmaDestroyBuffer(graphics::internal::context.allocator, staging_buffer, staging_allocation);
 
@@ -241,9 +218,7 @@ Texture load_texture(const char* path) {
 	view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	view_info.format = VK_FORMAT_R8G8B8A8_UNORM;
 	view_info.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-	check_vk(vkCreateImageView(graphics::internal::context.device, &view_info, nullptr,
-	                           &texture.view),
-	         "Failed to create texture image view");
+	check_vk(vkCreateImageView(graphics::internal::context.device, &view_info, nullptr, &texture.view), "Failed to create texture image view");
 	return texture;
 }
 
@@ -256,13 +231,10 @@ void create_sampler() {
 	info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	info.maxLod = 0.0f;
-	check_vk(vkCreateSampler(graphics::internal::context.device, &info, nullptr,
-	                         &texture_sampler),
-	         "Failed to create texture sampler");
+	check_vk(vkCreateSampler(graphics::internal::context.device, &info, nullptr, &texture_sampler), "Failed to create texture sampler");
 }
 
-void upload_geometry(Object& object, const std::vector<Vertex>& vertices,
-                     const std::vector<uint32_t>& indices) {
+void upload_geometry(Object& object, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
 	object.index_count = static_cast<uint32_t>(indices.size());
 	const VkDeviceSize vertex_bytes = vertices.size() * sizeof(Vertex);
 	const VkDeviceSize index_bytes = indices.size() * sizeof(uint32_t);
@@ -273,38 +245,24 @@ void upload_geometry(Object& object, const std::vector<Vertex>& vertices,
 	void* vertex_data = nullptr;
 	void* index_data = nullptr;
 	const VkBufferUsageFlags staging_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	const VmaAllocationCreateFlags host_flags =
-		VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-		| VMA_ALLOCATION_CREATE_MAPPED_BIT;
-	create_buffer(vertex_bytes, staging_usage, host_flags, VMA_MEMORY_USAGE_AUTO,
-	              vertex_staging, vertex_staging_allocation, &vertex_data);
-	create_buffer(index_bytes, staging_usage, host_flags, VMA_MEMORY_USAGE_AUTO,
-	              index_staging, index_staging_allocation, &index_data);
+	const VmaAllocationCreateFlags host_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+	create_buffer(vertex_bytes, staging_usage, host_flags, VMA_MEMORY_USAGE_AUTO,  vertex_staging, vertex_staging_allocation, &vertex_data);
+	create_buffer(index_bytes, staging_usage, host_flags, VMA_MEMORY_USAGE_AUTO,  index_staging, index_staging_allocation, &index_data);
 	std::memcpy(vertex_data, vertices.data(), static_cast<size_t>(vertex_bytes));
 	std::memcpy(index_data, indices.data(), static_cast<size_t>(index_bytes));
-	check_vk(vmaFlushAllocation(graphics::internal::context.allocator,
-	                            vertex_staging_allocation, 0, vertex_bytes),
-	         "Failed to flush vertex staging buffer");
-	check_vk(vmaFlushAllocation(graphics::internal::context.allocator,
-	                            index_staging_allocation, 0, index_bytes),
-	         "Failed to flush index staging buffer");
+	check_vk(vmaFlushAllocation(graphics::internal::context.allocator, vertex_staging_allocation, 0, vertex_bytes), "Failed to flush vertex staging buffer");
+	check_vk(vmaFlushAllocation(graphics::internal::context.allocator, index_staging_allocation, 0, index_bytes), "Failed to flush index staging buffer");
 
-	create_buffer(vertex_bytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-	              0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-	              object.vertex_buffer, object.vertex_allocation);
-	create_buffer(index_bytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-	              0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-	              object.index_buffer, object.index_allocation);
+	create_buffer(vertex_bytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, object.vertex_buffer, object.vertex_allocation);
+	create_buffer(index_bytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, object.index_buffer, object.index_allocation);
 	immediate_submit([&](VkCommandBuffer command) {
 		VkBufferCopy vertex_copy{0, 0, vertex_bytes};
 		VkBufferCopy index_copy{0, 0, index_bytes};
 		vkCmdCopyBuffer(command, vertex_staging, object.vertex_buffer, 1, &vertex_copy);
 		vkCmdCopyBuffer(command, index_staging, object.index_buffer, 1, &index_copy);
 	});
-	vmaDestroyBuffer(graphics::internal::context.allocator,
-	                 vertex_staging, vertex_staging_allocation);
-	vmaDestroyBuffer(graphics::internal::context.allocator,
-	                 index_staging, index_staging_allocation);
+	vmaDestroyBuffer(graphics::internal::context.allocator, vertex_staging, vertex_staging_allocation);
+	vmaDestroyBuffer(graphics::internal::context.allocator, index_staging, index_staging_allocation);
 }
 
 void make_cube(Object& object) {
@@ -343,9 +301,7 @@ void make_sphere(Object& object, int stacks, int slices) {
 		for (int x = 0; x <= slices; ++x) {
 			const float u = static_cast<float>(x) / static_cast<float>(slices);
 			const float theta = glm::two_pi<float>() * u;
-			const glm::vec3 normal(std::sin(phi) * std::cos(theta),
-			                       std::cos(phi),
-			                       std::sin(phi) * std::sin(theta));
+			const glm::vec3 normal(std::sin(phi) * std::cos(theta), std::cos(phi), std::sin(phi) * std::sin(theta));
 			vertices.push_back({normal, normal, {u, v}});
 		}
 	}
@@ -361,34 +317,24 @@ void make_sphere(Object& object, int stacks, int slices) {
 
 void create_descriptors() {
 	VkPhysicalDeviceProperties device_properties{};
-	vkGetPhysicalDeviceProperties(graphics::internal::context.physical_device,
-	                              &device_properties);
-	const VkDeviceSize uniform_alignment = std::max<VkDeviceSize>(
-		1, device_properties.limits.minUniformBufferOffsetAlignment);
-	properties_stride = (sizeof(ModelProperties) + uniform_alignment - 1)
-	                  / uniform_alignment * uniform_alignment;
+	vkGetPhysicalDeviceProperties(graphics::internal::context.physical_device, &device_properties);
+	const VkDeviceSize uniform_alignment = std::max<VkDeviceSize>(1, device_properties.limits.minUniformBufferOffsetAlignment);
+	properties_stride = (sizeof(ModelProperties) + uniform_alignment - 1) / uniform_alignment * uniform_alignment;
 	const VkDeviceSize buffer_size = properties_stride * objects.size();
 	void* mapped = nullptr;
-	create_buffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-	              VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-	              | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-	              VMA_MEMORY_USAGE_AUTO, properties_buffer, properties_allocation, &mapped);
+	create_buffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_AUTO, properties_buffer, properties_allocation, &mapped);
 	mapped_properties = static_cast<ModelProperties*>(mapped);
 
 	const VkDescriptorSetLayoutBinding bindings[] = {
-		{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1,
-		 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+		{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
 		{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
 		{2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
 		{3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
 	};
-	VkDescriptorSetLayoutCreateInfo layout_info{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+	VkDescriptorSetLayoutCreateInfo layout_info{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 	layout_info.bindingCount = 4;
 	layout_info.pBindings = bindings;
-	check_vk(vkCreateDescriptorSetLayout(graphics::internal::context.device, &layout_info,
-	                                     nullptr, &descriptor_layout),
-	         "Failed to create Lab 3 descriptor set layout");
+	check_vk(vkCreateDescriptorSetLayout(graphics::internal::context.device, &layout_info, nullptr, &descriptor_layout), "Failed to create Lab 3 descriptor set layout");
 
 	VkDescriptorPoolSize pool_sizes[] = {
 		{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, static_cast<uint32_t>(materials.size())},
@@ -399,20 +345,15 @@ void create_descriptors() {
 	pool_info.maxSets = static_cast<uint32_t>(materials.size());
 	pool_info.poolSizeCount = 2;
 	pool_info.pPoolSizes = pool_sizes;
-	check_vk(vkCreateDescriptorPool(graphics::internal::context.device, &pool_info,
-	                                nullptr, &descriptor_pool),
-	         "Failed to create Lab 3 descriptor pool");
+	check_vk(vkCreateDescriptorPool(graphics::internal::context.device, &pool_info, nullptr, &descriptor_pool), "Failed to create Lab 3 descriptor pool");
 
 	VkDescriptorSetLayout layouts[] = {descriptor_layout, descriptor_layout};
 	std::vector<VkDescriptorSet> descriptor_sets(materials.size(), VK_NULL_HANDLE);
-	VkDescriptorSetAllocateInfo allocate_info{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+	VkDescriptorSetAllocateInfo allocate_info{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 	allocate_info.descriptorPool = descriptor_pool;
 	allocate_info.descriptorSetCount = static_cast<uint32_t>(materials.size());
 	allocate_info.pSetLayouts = layouts;
-	check_vk(vkAllocateDescriptorSets(graphics::internal::context.device, &allocate_info,
-	                                  descriptor_sets.data()),
-	         "Failed to allocate Lab 3 material descriptor sets");
+	check_vk(vkAllocateDescriptorSets(graphics::internal::context.device, &allocate_info, descriptor_sets.data()), "Failed to allocate Lab 3 material descriptor sets");
 
 	for (size_t i = 0; i < materials.size(); ++i) {
 		materials[i].descriptor_set = descriptor_sets[i];
@@ -430,9 +371,7 @@ void create_descriptors() {
 		writes[0].pBufferInfo = &buffer_info;
 		for (uint32_t binding = 1; binding <= 3; ++binding) {
 			const Texture& texture = textures[texture_indices[binding - 1]];
-			image_infos[binding - 1] = {
-				texture_sampler, texture.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
+			image_infos[binding - 1] = { texture_sampler, texture.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, };
 			writes[binding].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writes[binding].dstSet = descriptor_sets[i];
 			writes[binding].dstBinding = binding;
@@ -449,8 +388,7 @@ VkShaderModule create_shader_module(const std::vector<char>& code) {
 	info.codeSize = code.size();
 	info.pCode = reinterpret_cast<const uint32_t*>(code.data());
 	VkShaderModule module = VK_NULL_HANDLE;
-	check_vk(vkCreateShaderModule(graphics::internal::context.device, &info, nullptr, &module),
-	         "Failed to create shader module");
+	check_vk(vkCreateShaderModule(graphics::internal::context.device, &info, nullptr, &module), "Failed to create shader module");
 	return module;
 }
 
@@ -469,10 +407,8 @@ std::vector<char> read_shader(const char* path) {
 }
 
 void create_pipeline() {
-	const VkShaderModule vertex_module =
-		create_shader_module(read_shader("shaders/shader.vert.spv"));
-	const VkShaderModule fragment_module =
-		create_shader_module(read_shader("shaders/shader.frag.spv"));
+	const VkShaderModule vertex_module = create_shader_module(read_shader("shaders/shader.vert.spv"));
+	const VkShaderModule fragment_module = create_shader_module(read_shader("shaders/shader.frag.spv"));
 	VkPipelineShaderStageCreateInfo stages[2]{};
 	stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -483,52 +419,40 @@ void create_pipeline() {
 	stages[1].module = fragment_module;
 	stages[1].pName = "main";
 
-	VkVertexInputBindingDescription vertex_binding{0, sizeof(Vertex),
-	                                               VK_VERTEX_INPUT_RATE_VERTEX};
+	VkVertexInputBindingDescription vertex_binding{ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
 	VkVertexInputAttributeDescription attributes[] = {
 		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
 		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
 		{2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
 	};
-	VkPipelineVertexInputStateCreateInfo vertex_input{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+	VkPipelineVertexInputStateCreateInfo vertex_input{ VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 	vertex_input.vertexBindingDescriptionCount = 1;
 	vertex_input.pVertexBindingDescriptions = &vertex_binding;
 	vertex_input.vertexAttributeDescriptionCount = 3;
 	vertex_input.pVertexAttributeDescriptions = attributes;
-	VkPipelineInputAssemblyStateCreateInfo assembly{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+	VkPipelineInputAssemblyStateCreateInfo assembly{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
 	assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	VkPipelineViewportStateCreateInfo viewport{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+	VkPipelineViewportStateCreateInfo viewport{ VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
 	viewport.viewportCount = 1;
 	viewport.scissorCount = 1;
-	VkPipelineRasterizationStateCreateInfo rasterization{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+	VkPipelineRasterizationStateCreateInfo rasterization{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
 	rasterization.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterization.lineWidth = 1.0f;
-	VkPipelineMultisampleStateCreateInfo multisample{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+	VkPipelineMultisampleStateCreateInfo multisample{ VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
 	multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	VkPipelineDepthStencilStateCreateInfo depth{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+	VkPipelineDepthStencilStateCreateInfo depth{ VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
 	depth.depthTestEnable = VK_TRUE;
 	depth.depthWriteEnable = VK_TRUE;
 	depth.depthCompareOp = VK_COMPARE_OP_LESS;
 	VkPipelineColorBlendAttachmentState blend_attachment{};
-	blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
-	                                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	VkPipelineColorBlendStateCreateInfo blend{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+	blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	VkPipelineColorBlendStateCreateInfo blend{ VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
 	blend.attachmentCount = 1;
 	blend.pAttachments = &blend_attachment;
-	const VkDynamicState dynamic_states[] = {
-		VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR,
-	};
-	VkPipelineDynamicStateCreateInfo dynamic{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+	const VkDynamicState dynamic_states[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, };
+	VkPipelineDynamicStateCreateInfo dynamic{ VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
 	dynamic.dynamicStateCount = 2;
 	dynamic.pDynamicStates = dynamic_states;
 
@@ -536,18 +460,14 @@ void create_pipeline() {
 	push_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	push_range.offset = 0;
 	push_range.size = sizeof(PushConstants);
-	VkPipelineLayoutCreateInfo layout_info{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+	VkPipelineLayoutCreateInfo layout_info{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 	layout_info.setLayoutCount = 1;
 	layout_info.pSetLayouts = &descriptor_layout;
 	layout_info.pushConstantRangeCount = 1;
 	layout_info.pPushConstantRanges = &push_range;
-	check_vk(vkCreatePipelineLayout(graphics::internal::context.device, &layout_info,
-	                                nullptr, &pipeline_layout),
-	         "Failed to create Lab 3 pipeline layout");
+	check_vk(vkCreatePipelineLayout(graphics::internal::context.device, &layout_info, nullptr, &pipeline_layout), "Failed to create Lab 3 pipeline layout");
 
-	VkGraphicsPipelineCreateInfo pipeline_info{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+	VkGraphicsPipelineCreateInfo pipeline_info{ VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 	pipeline_info.stageCount = 2;
 	pipeline_info.pStages = stages;
 	pipeline_info.pVertexInputState = &vertex_input;
@@ -560,9 +480,7 @@ void create_pipeline() {
 	pipeline_info.pDynamicState = &dynamic;
 	pipeline_info.layout = pipeline_layout;
 	pipeline_info.renderPass = graphics::internal::context.render_pass;
-	check_vk(vkCreateGraphicsPipelines(graphics::internal::context.device, VK_NULL_HANDLE,
-	                                 1, &pipeline_info, nullptr, &pipeline),
-	         "Failed to create Lab 3 graphics pipeline");
+	check_vk(vkCreateGraphicsPipelines(graphics::internal::context.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline), "Failed to create Lab 3 graphics pipeline");
 	vkDestroyShaderModule(graphics::internal::context.device, vertex_module, nullptr);
 	vkDestroyShaderModule(graphics::internal::context.device, fragment_module, nullptr);
 }
@@ -570,9 +488,7 @@ void create_pipeline() {
 glm::vec3 camera_forward() {
 	const float yaw = glm::radians(camera_yaw);
 	const float pitch = glm::radians(camera_pitch);
-	return glm::normalize(glm::vec3(std::cos(yaw) * std::cos(pitch),
-	                                std::sin(pitch),
-	                                std::sin(yaw) * std::cos(pitch)));
+	return glm::normalize(glm::vec3(std::cos(yaw) * std::cos(pitch), std::sin(pitch), std::sin(yaw) * std::cos(pitch)));
 }
 
 void update_properties() {
@@ -580,9 +496,7 @@ void update_properties() {
 	const float aspect = static_cast<float>(extent.width) / static_cast<float>(extent.height);
 	glm::mat4 projection = glm::perspective(glm::radians(field_of_view), aspect, 0.1f, 100.0f);
 	projection[1][1] *= -1.0f;
-	const glm::mat4 view = glm::lookAt(camera_position,
-	                                  camera_position + camera_forward(),
-	                                  glm::vec3(0, 1, 0));
+	const glm::mat4 view = glm::lookAt(camera_position, camera_position + camera_forward(), glm::vec3(0, 1, 0));
 	for (size_t i = 0; i < objects.size(); ++i) {
 		Object& object = objects[i];
 		glm::mat4 model = glm::translate(glm::mat4(1.0f), object.position);
@@ -590,26 +504,19 @@ void update_properties() {
 		model = glm::rotate(model, glm::radians(object.rotation.y), {0, 1, 0});
 		model = glm::rotate(model, glm::radians(object.rotation.z), {0, 0, 1});
 		model = glm::scale(model, object.scale);
-		auto* properties = reinterpret_cast<ModelProperties*>(
-			reinterpret_cast<unsigned char*>(mapped_properties) + properties_stride * i);
+		auto* properties = reinterpret_cast<ModelProperties*>(reinterpret_cast<unsigned char*>(mapped_properties) + properties_stride * i);
 		properties->view_projection = projection * view;
 		properties->model = model;
 		properties->camera_position = glm::vec4(camera_position, 1.0f);
-		const glm::vec3 direction = glm::length(light_direction) > 0.0001f
-		                          ? glm::normalize(light_direction) : glm::vec3(0, -1, 0);
+		const glm::vec3 direction = glm::length(light_direction) > 0.0001f ? glm::normalize(light_direction) : glm::vec3(0, -1, 0);
 		properties->light_direction_intensity = glm::vec4(direction, light_intensity);
 		properties->light_color = glm::vec4(light_color, 1.0f);
-		properties->ambient_color_intensity =
-			glm::vec4(ambient_color, ambient_intensity);
+		properties->ambient_color_intensity = glm::vec4(ambient_color, ambient_intensity);
 		properties->albedo_tint = glm::vec4(albedo_tint, 1.0f);
-		properties->specular_color_shininess =
-			glm::vec4(specular_color, shininess);
+		properties->specular_color_shininess = glm::vec4(specular_color, shininess);
 		properties->emissive_parameters = glm::vec4(emissive_intensity, 0, 0, 0);
 	}
-	check_vk(vmaFlushAllocation(graphics::internal::context.allocator,
-	                            properties_allocation, 0,
-	                            properties_stride * objects.size()),
-	         "Failed to flush dynamic model properties");
+	check_vk(vmaFlushAllocation(graphics::internal::context.allocator, properties_allocation, 0, properties_stride * objects.size()), "Failed to flush dynamic model properties");
 }
 
 } // namespace
@@ -618,12 +525,9 @@ bool initialize() {
 	try {
 		VkCommandPoolCreateInfo command_pool{
 			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-		command_pool.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
-		                   | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		command_pool.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		command_pool.queueFamilyIndex = graphics::internal::context.graphics_queue_index;
-		check_vk(vkCreateCommandPool(graphics::internal::context.device, &command_pool,
-		                             nullptr, &upload_command_pool),
-		         "Failed to create upload command pool");
+		check_vk(vkCreateCommandPool(graphics::internal::context.device, &command_pool, nullptr, &upload_command_pool), "Failed to create upload command pool");
 
 		textures.push_back(load_texture("textures/checker.ppm"));
 		textures.push_back(load_texture("textures/stone.ppm"));
@@ -742,9 +646,9 @@ void render(const graphics::internal::FrameData& frame) {
 	begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 	check_vk(vkBeginCommandBuffer(command, &begin), "Failed to begin Lab 3 command buffer");
 	VkClearValue clear_values[2]{};
-	clear_values[0].color = {{0.035f, 0.045f, 0.07f, 1.0f}};
-	clear_values[1].depthStencil = {1.0f, 0};
-	VkRenderPassBeginInfo render_pass{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+	clear_values[0].color = {{ 0.035f, 0.045f, 0.07f, 1.0f }};
+	clear_values[1].depthStencil = { 1.0f, 0 };
+	VkRenderPassBeginInfo render_pass{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
 	render_pass.renderPass = graphics::internal::context.render_pass;
 	render_pass.framebuffer = frame.framebuffer;
 	render_pass.renderArea.extent = extent;
@@ -765,16 +669,9 @@ void render(const graphics::internal::FrameData& frame) {
 		const Object& object = objects[i];
 		const VkDescriptorSet set = materials[object.material].descriptor_set;
 		const uint32_t dynamic_offset = static_cast<uint32_t>(properties_stride * i);
-		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
-		                        0, 1, &set, 1, &dynamic_offset);
-		const PushConstants push{
-			object.animated_sampling ? 1 : 0,
-			static_cast<float>(current_time),
-			object.sampling_strength,
-			0.0f,
-		};
-		vkCmdPushConstants(command, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
-		                   0, sizeof(push), &push);
+		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &set, 1, &dynamic_offset);
+		const PushConstants push{ object.animated_sampling ? 1 : 0, static_cast<float>(current_time), object.sampling_strength, 0.0f, };
+		vkCmdPushConstants(command, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
 		const VkDeviceSize offset = 0;
 		vkCmdBindVertexBuffers(command, 0, 1, &object.vertex_buffer, &offset);
 		vkCmdBindIndexBuffer(command, object.index_buffer, 0, VK_INDEX_TYPE_UINT32);

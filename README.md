@@ -73,11 +73,3 @@ in their respective folders. Build a single lab with:
 cmake --build build-debug --target lab2 --parallel
 cmake --build build-debug --target lab3 --parallel
 ```
-
-Run each executable with its build subdirectory as the working directory so it
-can find its shaders and textures:
-
-```bash
-cd build-debug/Lab2 && ./lab2.exe
-cd build-debug/Lab3 && ./lab3.exe
-```
