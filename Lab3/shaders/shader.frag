@@ -31,8 +31,7 @@ void main() {
     vec2 uv = texCoord;
     vec4 albedoSample;
     if (sampling.animatedSampling != 0) {
-        vec2 shift = vec2(sin(sampling.time + uv.y * 8.0),
-                          cos(sampling.time + uv.x * 8.0)) * 0.035 * sampling.strength;
+        vec2 shift = vec2(sin(sampling.time + uv.y * 8.0), cos(sampling.time + uv.x * 8.0)) * 0.035 * sampling.strength;
         vec4 center = texture(albedoTexture, uv + shift);
         vec4 offsetA = texture(albedoTexture, uv * 1.7 + vec2(0.13, -sampling.time * 0.05));
         vec4 offsetB = texture(albedoTexture, uv * 0.63 - vec2(sampling.time * 0.07, 0.19));
@@ -49,15 +48,10 @@ void main() {
     vec3 halfway = normalize(light + view);
     float diffuse = max(dot(normal, light), 0.0);
     float specularMask = texture(specularTexture, uv).r;
-    float specular = pow(max(dot(normal, halfway), 0.0),
-                         max(properties.specularColorShininess.w, 1.0))
-                   * specularMask;
+    float specular = pow(max(dot(normal, halfway), 0.0), max(properties.specularColorShininess.w, 1.0)) * specularMask;
 
-    vec3 ambient = albedo * properties.ambientColorIntensity.rgb
-                 * properties.ambientColorIntensity.w;
-    vec3 direct = (albedo * diffuse
-                 + properties.specularColorShininess.rgb * specular)
-                * properties.lightColor.rgb * properties.lightDirectionIntensity.w;
+    vec3 ambient = albedo * properties.ambientColorIntensity.rgb * properties.ambientColorIntensity.w;
+    vec3 direct = (albedo * diffuse + properties.specularColorShininess.rgb * specular) * properties.lightColor.rgb * properties.lightDirectionIntensity.w;
     vec3 emissive = texture(emissiveTexture, uv).rgb * properties.emissiveParameters.x;
     outColor = vec4(ambient + direct + emissive, albedoSample.a);
 }

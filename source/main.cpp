@@ -21,7 +21,7 @@ constexpr char default_window_title[] = "Vulkan Starter App";
 
 GLFWwindow* glfw_window;
 
-} // namespace
+}
 
 int main() {
 	int status = EXIT_SUCCESS;
@@ -33,8 +33,7 @@ int main() {
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	glfw_window = glfwCreateWindow(default_window_width, default_window_height,
-	                               default_window_title, nullptr, nullptr);
+	glfw_window = glfwCreateWindow(default_window_width, default_window_height, default_window_title, nullptr, nullptr);
 	if (glfw_window == nullptr) {
 		status = EXIT_FAILURE;
 		goto err_null_window;

@@ -22,13 +22,9 @@ void main() {
     vec3 halfway = normalize(light + view);
 
     float diffuse = max(dot(normal, light), 0.0);
-    float specular = pow(max(dot(normal, halfway), 0.0),
-                         max(scene.specularShininess.w, 1.0));
+    float specular = pow(max(dot(normal, halfway), 0.0), max(scene.specularShininess.w, 1.0));
 
-    vec3 ambient = scene.albedo.rgb * scene.ambientColorIntensity.rgb
-                 * scene.ambientColorIntensity.w;
-    vec3 direct = (scene.albedo.rgb * diffuse
-                 + scene.specularShininess.rgb * specular)
-                * scene.lightColorIntensity.rgb * scene.lightColorIntensity.w;
+    vec3 ambient = scene.albedo.rgb * scene.ambientColorIntensity.rgb * scene.ambientColorIntensity.w;
+    vec3 direct = (scene.albedo.rgb * diffuse + scene.specularShininess.rgb * specular) * scene.lightColorIntensity.rgb * scene.lightColorIntensity.w;
     outColor = vec4(ambient + direct, 1.0);
 }

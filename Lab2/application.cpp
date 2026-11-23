@@ -118,9 +118,7 @@ void create_cube(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices) 
 	}
 }
 
-void create_buffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                   VkBuffer& buffer, VmaAllocation& allocation,
-                   void** mapped = nullptr) {
+void create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, VmaAllocation& allocation, void** mapped = nullptr) {
 	VkBufferCreateInfo buffer_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
 	buffer_info.size = size;
 	buffer_info.usage = usage;
@@ -129,13 +127,9 @@ void create_buffer(VkDeviceSize size, VkBufferUsageFlags usage,
 	VmaAllocationCreateInfo allocation_info{};
 	allocation_info.usage = VMA_MEMORY_USAGE_AUTO;
 	if (mapped)
-		allocation_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-		                      | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+		allocation_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 	VmaAllocationInfo result{};
-	check_vk(vmaCreateBuffer(graphics::internal::context.allocator, &buffer_info,
-	                         &allocation_info, &buffer, &allocation,
-	                         mapped ? &result : nullptr),
-	         "Failed to create Lab 2 buffer");
+	check_vk(vmaCreateBuffer(graphics::internal::context.allocator, &buffer_info, &allocation_info, &buffer, &allocation, mapped ? &result : nullptr), "Failed to create Lab 2 buffer");
 	if (mapped)
 		*mapped = result.pMappedData;
 }
@@ -147,18 +141,14 @@ void create_geometry() {
 	index_count = static_cast<uint32_t>(indices.size());
 
 	void* mapped = nullptr;
-	create_buffer(vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-	              vertex_buffer, vertex_allocation, &mapped);
+	create_buffer(vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertex_buffer, vertex_allocation, &mapped);
 	std::memcpy(mapped, vertices.data(), vertices.size() * sizeof(Vertex));
-	check_vk(vmaFlushAllocation(graphics::internal::context.allocator,
-	                            vertex_allocation, 0, VK_WHOLE_SIZE),
+	check_vk(vmaFlushAllocation(graphics::internal::context.allocator, vertex_allocation, 0, VK_WHOLE_SIZE),
 	         "Failed to flush Lab 2 vertex buffer");
 
-	create_buffer(indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-	              index_buffer, index_allocation, &mapped);
+	create_buffer(indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, index_buffer, index_allocation, &mapped);
 	std::memcpy(mapped, indices.data(), indices.size() * sizeof(uint32_t));
-	check_vk(vmaFlushAllocation(graphics::internal::context.allocator,
-	                            index_allocation, 0, VK_WHOLE_SIZE),
+	check_vk(vmaFlushAllocation(graphics::internal::context.allocator, index_allocation, 0, VK_WHOLE_SIZE),
 	         "Failed to flush Lab 2 index buffer");
 }
 
@@ -168,35 +158,25 @@ void create_descriptors() {
 	binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	binding.descriptorCount = 1;
 	binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-	VkDescriptorSetLayoutCreateInfo layout_info{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+	VkDescriptorSetLayoutCreateInfo layout_info{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 	layout_info.bindingCount = 1;
 	layout_info.pBindings = &binding;
-	check_vk(vkCreateDescriptorSetLayout(graphics::internal::context.device, &layout_info,
-	                                     nullptr, &descriptor_layout),
-	         "Failed to create Lab 2 descriptor set layout");
+	check_vk(vkCreateDescriptorSetLayout(graphics::internal::context.device, &layout_info, nullptr, &descriptor_layout), "Failed to create Lab 2 descriptor set layout");
 
 	VkDescriptorPoolSize pool_size{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1};
 	VkDescriptorPoolCreateInfo pool_info{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
 	pool_info.maxSets = 1;
 	pool_info.poolSizeCount = 1;
 	pool_info.pPoolSizes = &pool_size;
-	check_vk(vkCreateDescriptorPool(graphics::internal::context.device, &pool_info,
-	                                nullptr, &descriptor_pool),
-	         "Failed to create Lab 2 descriptor pool");
+	check_vk(vkCreateDescriptorPool(graphics::internal::context.device, &pool_info, nullptr, &descriptor_pool), "Failed to create Lab 2 descriptor pool");
 
-	VkDescriptorSetAllocateInfo allocate_info{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+	VkDescriptorSetAllocateInfo allocate_info{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 	allocate_info.descriptorPool = descriptor_pool;
 	allocate_info.descriptorSetCount = 1;
 	allocate_info.pSetLayouts = &descriptor_layout;
-	check_vk(vkAllocateDescriptorSets(graphics::internal::context.device, &allocate_info,
-	                                  &descriptor_set),
-	         "Failed to allocate Lab 2 descriptor set");
+	check_vk(vkAllocateDescriptorSets(graphics::internal::context.device, &allocate_info, &descriptor_set), "Failed to allocate Lab 2 descriptor set");
 
-	create_buffer(sizeof(SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-	              uniform_buffer, uniform_allocation,
-	              reinterpret_cast<void**>(&mapped_uniform));
+	create_buffer(sizeof(SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, uniform_buffer, uniform_allocation, reinterpret_cast<void**>(&mapped_uniform));
 	VkDescriptorBufferInfo buffer_info{uniform_buffer, 0, sizeof(SceneUniform)};
 	VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 	write.dstSet = descriptor_set;
@@ -223,65 +203,49 @@ void create_pipeline() {
 	stages[1].module = fragment_module;
 	stages[1].pName = "main";
 
-	VkVertexInputBindingDescription vertex_binding{0, sizeof(Vertex),
-	                                               VK_VERTEX_INPUT_RATE_VERTEX};
+	VkVertexInputBindingDescription vertex_binding{ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
 	VkVertexInputAttributeDescription attributes[] = {
 		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
 		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
 	};
-	VkPipelineVertexInputStateCreateInfo vertex_input{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+	VkPipelineVertexInputStateCreateInfo vertex_input{ VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 	vertex_input.vertexBindingDescriptionCount = 1;
 	vertex_input.pVertexBindingDescriptions = &vertex_binding;
 	vertex_input.vertexAttributeDescriptionCount = 2;
 	vertex_input.pVertexAttributeDescriptions = attributes;
 
-	VkPipelineInputAssemblyStateCreateInfo assembly{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+	VkPipelineInputAssemblyStateCreateInfo assembly{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
 	assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	VkPipelineViewportStateCreateInfo viewport{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+	VkPipelineViewportStateCreateInfo viewport{ VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
 	viewport.viewportCount = 1;
 	viewport.scissorCount = 1;
-	VkPipelineRasterizationStateCreateInfo rasterization{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+	VkPipelineRasterizationStateCreateInfo rasterization{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
 	rasterization.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterization.lineWidth = 1.0f;
-	VkPipelineMultisampleStateCreateInfo multisample{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+	VkPipelineMultisampleStateCreateInfo multisample{ VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
 	multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	VkPipelineDepthStencilStateCreateInfo depth{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+	VkPipelineDepthStencilStateCreateInfo depth{ VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
 	depth.depthTestEnable = VK_TRUE;
 	depth.depthWriteEnable = VK_TRUE;
 	depth.depthCompareOp = VK_COMPARE_OP_LESS;
 	VkPipelineColorBlendAttachmentState blend_attachment{};
-	blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
-	                                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	VkPipelineColorBlendStateCreateInfo blend{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+	blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	VkPipelineColorBlendStateCreateInfo blend{ VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
 	blend.attachmentCount = 1;
 	blend.pAttachments = &blend_attachment;
-	const VkDynamicState dynamic_states[] = {
-		VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR,
-	};
-	VkPipelineDynamicStateCreateInfo dynamic{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+	const VkDynamicState dynamic_states[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, };
+	VkPipelineDynamicStateCreateInfo dynamic{ VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
 	dynamic.dynamicStateCount = 2;
 	dynamic.pDynamicStates = dynamic_states;
 
-	VkPipelineLayoutCreateInfo layout_info{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+	VkPipelineLayoutCreateInfo layout_info{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 	layout_info.setLayoutCount = 1;
 	layout_info.pSetLayouts = &descriptor_layout;
-	check_vk(vkCreatePipelineLayout(graphics::internal::context.device, &layout_info,
-	                                nullptr, &pipeline_layout),
-	         "Failed to create Lab 2 pipeline layout");
+	check_vk(vkCreatePipelineLayout(graphics::internal::context.device, &layout_info, nullptr, &pipeline_layout),  "Failed to create Lab 2 pipeline layout");
 
-	VkGraphicsPipelineCreateInfo pipeline_info{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+	VkGraphicsPipelineCreateInfo pipeline_info{ VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 	pipeline_info.stageCount = 2;
 	pipeline_info.pStages = stages;
 	pipeline_info.pVertexInputState = &vertex_input;
@@ -294,9 +258,7 @@ void create_pipeline() {
 	pipeline_info.pDynamicState = &dynamic;
 	pipeline_info.layout = pipeline_layout;
 	pipeline_info.renderPass = graphics::internal::context.render_pass;
-	check_vk(vkCreateGraphicsPipelines(graphics::internal::context.device, VK_NULL_HANDLE,
-	                                 1, &pipeline_info, nullptr, &pipeline),
-	         "Failed to create Lab 2 graphics pipeline");
+	check_vk(vkCreateGraphicsPipelines(graphics::internal::context.device, VK_NULL_HANDLE,  1, &pipeline_info, nullptr, &pipeline), "Failed to create Lab 2 graphics pipeline");
 	vkDestroyShaderModule(graphics::internal::context.device, vertex_module, nullptr);
 	vkDestroyShaderModule(graphics::internal::context.device, fragment_module, nullptr);
 }
@@ -304,9 +266,7 @@ void create_pipeline() {
 glm::vec3 camera_forward() {
 	const float yaw = glm::radians(camera_yaw);
 	const float pitch = glm::radians(camera_pitch);
-	return glm::normalize(glm::vec3(std::cos(yaw) * std::cos(pitch),
-	                                std::sin(pitch),
-	                                std::sin(yaw) * std::cos(pitch)));
+	return glm::normalize(glm::vec3(std::cos(yaw) * std::cos(pitch), std::sin(pitch), std::sin(yaw) * std::cos(pitch)));
 }
 
 void update_uniform() {
@@ -314,9 +274,7 @@ void update_uniform() {
 	const float aspect = static_cast<float>(extent.width) / static_cast<float>(extent.height);
 	glm::mat4 projection = glm::perspective(glm::radians(field_of_view), aspect, 0.1f, 100.0f);
 	projection[1][1] *= -1.0f;
-	const glm::mat4 view = glm::lookAt(camera_position,
-	                                  camera_position + camera_forward(),
-	                                  glm::vec3(0, 1, 0));
+	const glm::mat4 view = glm::lookAt(camera_position, camera_position + camera_forward(), glm::vec3(0, 1, 0));
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), model_position);
 	model = glm::rotate(model, glm::radians(model_rotation.x), {1, 0, 0});
 	model = glm::rotate(model, glm::radians(model_rotation.y), {0, 1, 0});
@@ -326,16 +284,13 @@ void update_uniform() {
 	mapped_uniform->view_projection = projection * view;
 	mapped_uniform->model = model;
 	mapped_uniform->camera_position = glm::vec4(camera_position, 1.0f);
-	const glm::vec3 direction = glm::length(light_direction) > 0.0001f
-	                          ? glm::normalize(light_direction) : glm::vec3(0, -1, 0);
+	const glm::vec3 direction = glm::length(light_direction) > 0.0001f ? glm::normalize(light_direction) : glm::vec3(0, -1, 0);
 	mapped_uniform->light_direction = glm::vec4(direction, 0.0f);
 	mapped_uniform->light_color_intensity = glm::vec4(light_color, light_intensity);
 	mapped_uniform->ambient_color_intensity = glm::vec4(ambient_color, ambient_intensity);
 	mapped_uniform->albedo = glm::vec4(albedo, 1.0f);
 	mapped_uniform->specular_shininess = glm::vec4(specular_color, shininess);
-	check_vk(vmaFlushAllocation(graphics::internal::context.allocator,
-	                            uniform_allocation, 0, sizeof(SceneUniform)),
-	         "Failed to flush Lab 2 uniform buffer");
+	check_vk(vmaFlushAllocation(graphics::internal::context.allocator, uniform_allocation, 0, sizeof(SceneUniform)), "Failed to flush Lab 2 uniform buffer");
 }
 
 } // namespace
